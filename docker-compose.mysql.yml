@@ -1,0 +1,68 @@
+version: '3.8'
+
+networks:
+  ticket_net:
+    name: ticket_net
+
+# Anchors
+x-mysql-env: &mysql_env
+  MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+
+x-mysql-common: &mysql_common
+  image: mysql:8.4
+  networks: [ticket_net]
+  volumes:
+    - ./config/mysql:/etc/mysql/conf.d
+  environment:
+    <<: *mysql_env
+  command: >
+    mysqld --lower_case_table_names=1
+           --skip-mysqlx
+           --character_set_server=utf8mb4
+           --explicit_defaults_for_timestamp
+  healthcheck:
+    test: ["CMD-SHELL", "mysql -uroot -e 'SELECT 1;' && sleep 5"]
+    interval: 5s
+    timeout: 10s
+    retries: 10
+
+services:
+  ms_route-mysql:
+    <<: *mysql_common
+    container_name: ms_route-mysql
+    environment:
+      <<: *mysql_env
+      MYSQL_DATABASE: ms_route
+    ports: ["${MS_ROUTE_DB_PORT:-3307}:3306"]
+
+  ms_user-mysql:
+    <<: *mysql_common
+    container_name: ms_user-mysql
+    environment:
+      <<: *mysql_env
+      MYSQL_DATABASE: ms_user
+    ports: ["${MS_USER_DB_PORT:-3308}:3306"]
+
+  ms_booking-mysql:
+    <<: *mysql_common
+    container_name: ms_booking-mysql
+    environment:
+      <<: *mysql_env
+      MYSQL_DATABASE: ms_booking
+    ports: ["${MS_BOOKING_DB_PORT:-3309}:3306"]
+
+  ms_payment-mysql:
+    <<: *mysql_common
+    container_name: ms_payment-mysql
+    environment:
+      <<: *mysql_env
+      MYSQL_DATABASE: ms_payment
+    ports: ["${MS_PAYMENT_DB_PORT:-3310}:3306"]
+
+  ms_notification-mysql:
+    <<: *mysql_common
+    container_name: ms_notification-mysql
+    environment:
+      <<: *mysql_env
+      MYSQL_DATABASE: ms_notification
+    ports: ["${MS_NOTIFICATION_DB_PORT:-3311}:3306"]
