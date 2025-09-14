@@ -1,0 +1,18 @@
+docker run -it --rm \
+  -v $(pwd)/nginx/letsencrypt:/etc/letsencrypt \
+  -v $(pwd)/nginx/cloudflare.ini:/cloudflare.ini \
+  certbot/dns-cloudflare certonly \
+  --dns-cloudflare \
+  --dns-cloudflare-credentials /cloudflare.ini \
+  -d '*.appf4s.io.vn' \
+  -d appf4s.io.vn \
+  --email shegga9x@gmail.com \
+  --agree-tos \
+  --non-interactive
+
+
+export APP_F4_PASS="your_password_here"
+echo $APP_F4_PASS  # Verify it's set
+
+
+
