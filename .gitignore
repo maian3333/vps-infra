@@ -1,0 +1,41 @@
+# Java / Maven
+target/
+*.class
+*.log
+*.jar
+*.war
+*.nar
+*.ear
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+
+# Node / frontend (just in case)
+node_modules/
+.next/
+dist/
+build/
+*.map
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Misc archives
+*.zip
+*.tar.gz
+*.rar
