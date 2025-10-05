@@ -29,6 +29,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     volumes:
       - ./kafka/ssl:/etc/kafka/secrets
+
     depends_on:
       - zookeeper
   kafka-ui:
@@ -85,6 +86,8 @@ services:
     volumes:
       - ./realm-config:/opt/keycloak/data/import
       - ./realm-config/keycloak-health-check.sh:/opt/keycloak/health-check.sh
+      - ./keycloak-custom-reg/lib:/opt/keycloak/providers         # <-- your jar here
+
     environment:
       - KC_DB=dev-file
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
@@ -174,3 +177,5 @@ services:
 volumes:
   prometheus_data: {}
   grafana_data: {}
+
+

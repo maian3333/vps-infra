@@ -322,6 +322,7 @@
       "jhipster-control-center": [],
       "security-admin-console": [],
       "web_app": [],
+      "svc-admin-bootstrap": [],
       "admin-cli": [],
       "account-console": [],
       "broker": [
@@ -516,6 +517,112 @@
       "realmRoles": [
         "default-roles-jhipster"
       ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "4c973896-5761-41fc-8217-07c5d13a004b",
+      "createdTimestamp": 1505479415590,
+      "username": "admin",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "Administrator",
+      "email": "admin@localhost",
+      "credentials": [
+        {
+          "id": "b860462b-9b02-48ba-9523-d3a8926a917b",
+          "type": "password",
+          "createdDate": 1505479429154,
+          "secretData": "{\"value\":\"4pf9K2jWSCcHC+CwsZP/qidN5pSmDUe6AX6wBerSGdBVKkExay8MWKx+EKmaaObZW6FVsD8vdW/ZsyUFD9gJ1Q==\",\"salt\":\"1/qNkZ5kr77jOMOBPBogGw==\"}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "offline_access",
+        "uma_authorization"
+      ],
+      "clientRoles": {
+        "account": [
+          "view-profile",
+          "manage-account"
+        ]
+      },
+      "notBefore": 0,
+      "groups": [
+        "/Admins",
+        "/Users"
+      ]
+    },
+    {
+      "id": "c4af4e2f-b432-4c3b-8405-cca86cd5b97b",
+      "createdTimestamp": 1505479373742,
+      "username": "user",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": true,
+      "firstName": "",
+      "lastName": "User",
+      "email": "user@localhost",
+      "credentials": [
+        {
+          "id": "7821832b-1e82-45a2-b8d3-f1a6ad909e64",
+          "type": "password",
+          "createdDate": 1505479392766,
+          "secretData": "{\"value\":\"MbKsMgWPnZyImih8s4SaoCSCq+XIY/c6S9F93sXEidHF1TjPWxCqMkec0+o3860CMLXHt3az61cIJOWI0FW9aw==\",\"salt\":\"fmpBI1r8R1u75hDLMUlwBw==\"}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "offline_access",
+        "uma_authorization"
+      ],
+      "clientRoles": {
+        "account": [
+          "view-profile",
+          "manage-account"
+        ]
+      },
+      "notBefore": 0,
+      "groups": [
+        "/Users"
+      ]
+    },
+    {
+      "id": "svc-admin-bootstrap-svc-acc-id",
+      "createdTimestamp": 1759677968000,
+      "username": "service-account-svc-admin-bootstrap",
+      "enabled": true,
+      "totp": false,
+      "emailVerified": false,
+      "serviceAccountClientId": "svc-admin-bootstrap",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-jhipster"
+      ],
+      "clientRoles": {
+        "realm-management": [
+          "manage-authorization",
+          "manage-identity-providers",
+          "query-groups",
+          "impersonation",
+          "manage-events",
+          "query-clients",
+          "manage-realm",
+          "view-authorization",
+          "view-events",
+          "view-clients",
+          "create-client",
+          "manage-clients",
+          "manage-users"
+        ]
+      },
       "notBefore": 0,
       "groups": []
     }
@@ -1002,55 +1109,66 @@
     {
       "id": "6e8deddb-b4d6-4e2e-b389-b397d3f74fcd",
       "clientId": "web_app",
+      "name": "",
+      "description": "",
       "rootUrl": "http://localhost:8080",
       "adminUrl": "http://localhost:8080",
+      "baseUrl": "",
       "surrogateAuthRequired": false,
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "web_app",
+      "secret": "0TnpRknqjQYngbnbRW7hKECA8TbR4D7V",
       "redirectUris": [
+        "dev.localhost.ionic:*",
         "http://localhost:8080/*",
-        "https://localhost:8080/*",
-        "http://localhost:4200/*",
-        "http://localhost:9000/*",
         "http://localhost:8100/*",
         "http://127.0.0.1:8761/*",
-        "https://kafdrop.appf4s.io.vn/oauth2/callback",
         "https://consul.appf4s.io.vn/oauth2/callback",
+        "http://localhost:4200/*",
+        "https://apigateway.microservices.appf4s.io.vn/*",
+        "https://kafdrop.appf4s.io.vn/oauth2/callback",
         "https://redisinsiight.appf4s.io.vn/oauth2/callback",
-        "dev.localhost.ionic:*"
+        "http://localhost:9000/*",
+        "https://localhost:8080/*"
       ],
       "webOrigins": [
+        "https://consul.appf4s.io.vn",
+        "https://kafdrop.appf4s.io.vn",
+        "http://127.0.0.1:8761",
         "http://localhost:8080",
-        "https://localhost:8080",
+        "https://apigateway.microservices.appf4s.io.vn",
         "http://localhost:4200",
+        "https://redisinsiight.appf4s.io.vn",
         "http://localhost:9000",
         "http://localhost:8100",
-        "http://127.0.0.1:8761",
-        "https://kafdrop.appf4s.io.vn",
-        "https://consul.appf4s.io.vn",
-        "https://redisinsiight.appf4s.io.vn"
+        "https://localhost:8080"
       ],
       "notBefore": 0,
       "bearerOnly": false,
       "consentRequired": false,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
+      "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
-      "publicClient": true,
+      "publicClient": false,
       "frontchannelLogout": false,
       "protocol": "openid-connect",
       "attributes": {
         "saml.assertion.signature": "false",
+        "client.secret.creation.time": "1759673828",
         "saml.force.post.binding": "false",
         "saml.multivalued.roles": "false",
         "saml.encrypt": "false",
         "post.logout.redirect.uris": "+",
+        "oauth2.device.authorization.grant.enabled": "false",
         "saml.server.signature": "false",
+        "backchannel.logout.revoke.offline.tokens": "false",
         "saml.server.signature.keyinfo.ext": "false",
         "exclude.session.state.from.auth.response": "false",
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
         "saml_force_name_id_format": "false",
         "saml.client.signature": "false",
         "tls.client.certificate.bound.access.tokens": "false",
@@ -1067,6 +1185,7 @@
         "jhipster",
         "roles",
         "profile",
+        "basic",
         "email"
       ],
       "optionalClientScopes": [
@@ -1074,7 +1193,83 @@
         "phone",
         "offline_access",
         "microprofile-jwt"
-      ]
+      ],
+      "access": {
+        "view": true,
+        "configure": true,
+        "manage": true
+      }
+    },
+    {
+      "clientId": "svc-admin-bootstrap",
+      "name": "",
+      "description": "",
+      "rootUrl": "",
+      "adminUrl": "",
+      "baseUrl": "",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "EB4eohc7BEY3tw1Rjg7FS8xMLfi95n0n",
+      "redirectUris": [
+        "/*"
+      ],
+      "webOrigins": [
+        "/*"
+      ],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "client.secret.creation.time": "1759677968",
+        "client.introspection.response.allow.jwt.claim.enabled": "false",
+        "frontchannel.logout.session.required": "true",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.revoke.offline.tokens": "false",
+        "use.refresh.tokens": "true",
+        "realm_client": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "client.use.lightweight.access.token.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "client_credentials.use_refresh_token": "false",
+        "tls.client.certificate.bound.access.tokens": "false",
+        "require.pushed.authorization.requests": "false",
+        "acr.loa.map": "{}",
+        "display.on.consent.screen": "false",
+        "token.response.type.bearer.lower-case": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "service_account",
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "jhipster",
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "access": {
+        "view": true,
+        "configure": true,
+        "manage": true
+      }
     }
   ],
   "clientScopes": [
@@ -2509,7 +2704,13 @@
     "cibaInterval": "5",
     "realmReusableOtpCode": "false",
     "frontendUrl": "",
-    "acr.loa.map": "[]"
+    "acr.loa.map": "[]",
+    "sms.api.baseUrl": "https://msreel.appf4.io.vn:443",
+    "sms.api.username": "MDIOC_",
+    "sms.api.password": "a4kofbmelzgta2",
+    "sms.deviceId": "OfPgpLhS9LY7D64hiK8VN",
+    "sms.simNumber": "1",
+    "sms.otp.ttlSeconds": "90"
   },
   "keycloakVersion": "23.0.1",
   "userManagedAccessAllowed": false,
@@ -2518,80 +2719,5 @@
   },
   "clientPolicies": {
     "policies": []
-  },
-  "users": [
-    {
-      "id": "4c973896-5761-41fc-8217-07c5d13a004b",
-      "createdTimestamp": 1505479415590,
-      "username": "admin",
-      "enabled": true,
-      "totp": false,
-      "emailVerified": true,
-      "firstName": "Admin",
-      "lastName": "Administrator",
-      "email": "admin@localhost",
-      "credentials": [
-        {
-          "id": "b860462b-9b02-48ba-9523-d3a8926a917b",
-          "type": "password",
-          "createdDate": 1505479429154,
-          "secretData": "{\"value\":\"4pf9K2jWSCcHC+CwsZP/qidN5pSmDUe6AX6wBerSGdBVKkExay8MWKx+EKmaaObZW6FVsD8vdW/ZsyUFD9gJ1Q==\",\"salt\":\"1/qNkZ5kr77jOMOBPBogGw==\"}",
-          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
-        }
-      ],
-      "disableableCredentialTypes": [],
-      "requiredActions": [],
-      "realmRoles": [
-        "offline_access",
-        "uma_authorization"
-      ],
-      "clientRoles": {
-        "account": [
-          "view-profile",
-          "manage-account"
-        ]
-      },
-      "notBefore": 0,
-      "groups": [
-        "/Admins",
-        "/Users"
-      ]
-    },
-    {
-      "id": "c4af4e2f-b432-4c3b-8405-cca86cd5b97b",
-      "createdTimestamp": 1505479373742,
-      "username": "user",
-      "enabled": true,
-      "totp": false,
-      "emailVerified": true,
-      "firstName": "",
-      "lastName": "User",
-      "email": "user@localhost",
-      "credentials": [
-        {
-          "id": "7821832b-1e82-45a2-b8d3-f1a6ad909e64",
-          "type": "password",
-          "createdDate": 1505479392766,
-          "secretData": "{\"value\":\"MbKsMgWPnZyImih8s4SaoCSCq+XIY/c6S9F93sXEidHF1TjPWxCqMkec0+o3860CMLXHt3az61cIJOWI0FW9aw==\",\"salt\":\"fmpBI1r8R1u75hDLMUlwBw==\"}",
-          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
-        }
-      ],
-      "disableableCredentialTypes": [],
-      "requiredActions": [],
-      "realmRoles": [
-        "offline_access",
-        "uma_authorization"
-      ],
-      "clientRoles": {
-        "account": [
-          "view-profile",
-          "manage-account"
-        ]
-      },
-      "notBefore": 0,
-      "groups": [
-        "/Users"
-      ]
-    }
-  ]
+  }
 }
