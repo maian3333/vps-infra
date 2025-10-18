@@ -2,12 +2,22 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     container_name: zookeeper
+    restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    labels:
+      autoheal: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo ruok | nc -w 2 localhost 2181 | grep imok'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: kafka
+    restart: unless-stopped
     ports:
       - "9092:9092"
     environment:
@@ -23,59 +33,109 @@ services:
       KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.client.truststore.jks
       KAFKA_SSL_TRUSTSTORE_PASSWORD: f4security
       KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
-
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     volumes:
       - ./kafka/ssl:/etc/kafka/secrets
-
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
+    labels:
+      autoheal: "true"
+    healthcheck:
+      # uses built-in Kafka CLI; OK if it exits 0
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
+    restart: unless-stopped
     environment:
-      # cluster definition
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
       - JVM_OPTS=-Xms256M -Xmx512M
     volumes:
       - ./secrets:/etc/kafka/secrets:ro
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
+    labels:
+      autoheal: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q 'UP'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   consul:
     image: docker.io/bitnami/consul:1.21.0
+    restart: unless-stopped
     ports:
       - 8300:8300
       - 8500:8500
       - 8600:8600
     command: consul agent -dev -ui -client 0.0.0.0 -log-level=INFO
+    labels:
+      autoheal: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8500/v1/status/leader | grep -q :8300"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   consul-config-loader:
     image: jhipster/consul-config-loader:v0.4.1
+    restart: unless-stopped
     volumes:
       - ./central-server-config:/config
     environment:
       - INIT_SLEEP_SECONDS=5
       - CONSUL_URL=consul
       - CONSUL_PORT=8500
+    depends_on:
+      consul:
+        condition: service_healthy
+    labels:
+      autoheal: "true"
+
   redis:
-    image: redis:7.4.2 # Same version as prod
+    image: redis:7.4.2
+    restart: unless-stopped
     ports:
       - "6379:6379"
     command: redis-server --requirepass ${APP_F4_PASS}
+    labels:
+      autoheal: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$APP_F4_PASS\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   redisinsight:
     image: redis/redisinsight:latest
     container_name: redisinsight
-
+    restart: unless-stopped
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${APP_F4_PASS}
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    labels:
+      autoheal: "true"
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.1.1
+    restart: unless-stopped
     command:
       - "start-dev"
       - "--import-realm"
@@ -86,8 +146,7 @@ services:
     volumes:
       - ./realm-config:/opt/keycloak/data/import
       - ./realm-config/keycloak-health-check.sh:/opt/keycloak/health-check.sh
-      - ./keycloak-custom-reg/lib:/opt/keycloak/providers         # <-- your jar here
-
+      - ./keycloak-custom-reg/lib:/opt/keycloak/providers
     environment:
       - KC_DB=dev-file
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
@@ -107,53 +166,26 @@ services:
       timeout: 5s
       retries: 50
       start_period: 10s
+    labels:
+      autoheal: "true"
 
-  prometheus:
-    image: prom/prometheus:v3.3.1
-    volumes:
-      - ./prometheus-conf/:/etc/prometheus/
-      - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-    ports:
-      - 9090:9090
-
-  alertmanager:
-    image: prom/alertmanager:v0.28.1
-    ports:
-      - 9093:9093
-    volumes:
-      - ./alertmanager-conf/:/etc/alertmanager/
-    command:
-      - "--config.file=/etc/alertmanager/config.yml"
-      - "--storage.path=/alertmanager"
-
-  grafana:
-    image: grafana/grafana:12.0.0
-    ports:
-      - 3000:3000
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    restart: unless-stopped
     environment:
       - ES_JAVA_OPTS=-Xms256m -Xmx256m
       - discovery.type=single-node
       - xpack.security.enabled=false
     ports:
       - 9200:9200
+    labels:
+      autoheal: "true"
     healthcheck:
-      test:
-        - CMD
-        - curl
-        - -f
-        - http://localhost:9200/_cluster/health?wait_for_status=green&timeout=10s
-      interval: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=green&timeout=10s"]
+      interval: 10s
       timeout: 10s
       retries: 10
+
   nginx:
     build: ./nginx/
     container_name: nginx
@@ -170,12 +202,31 @@ services:
       - ./nginx/letsencrypt:/etc/letsencrypt
       - ./nginx/www:/var/www/html
       - ./nginx/log:/var/log/nginx
-      - ./lua/validate_token.lua:/etc/nginx/validate_token.lua # Mount the Lua script
+      - ./lua/validate_token.lua:/etc/nginx/validate_token.lua
       - ./lua:/etc/nginx/lua
     command: [ "/usr/local/openresty/bin/openresty", "-g", "daemon off;" ]
+    labels:
+      autoheal: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Autoheal: restarts containers with health=unhealthy and label autoheal=true
+  autoheal:
+    image: willfarrell/autoheal:latest
+    container_name: autoheal
+    restart: unless-stopped
+    environment:
+      - AUTOHEAL_INTERVAL=5
+      - AUTOHEAL_START_PERIOD=0
+      - AUTOHEAL_DEFAULT_STOP_TIMEOUT=10
+      # Only heal containers with label autoheal=true (default behavior)
+      # - AUTOHEAL_CONTAINER_LABEL=autoheal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
 volumes:
-  prometheus_data: {}
-  grafana_data: {}
-
-
+  # Removed prometheus_data and grafana_data as requested
