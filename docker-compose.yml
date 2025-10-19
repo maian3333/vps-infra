@@ -2,17 +2,10 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     container_name: zookeeper
-    restart: unless-stopped
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    labels:
-      autoheal: "true"
-    healthcheck:
-      test: ["CMD-SHELL", "bash -c 'echo ruok | nc -w 2 localhost 2181 | grep imok'"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -22,6 +15,11 @@ services:
       - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
+      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m"   # heap floor/ceiling
+      KAFKA_JVM_PERFORMANCE_OPTS: >-
+        -server -XX:+UseG1GC -XX:MaxGCPauseMillis=200
+        -XX:InitiatingHeapOccupancyPercent=35
+        -XX:+ExplicitGCInvokesConcurrent -Djava.awt.headless=true
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: DOCKER:PLAINTEXT,EXTERNAL:SSL
       KAFKA_ADVERTISED_LISTENERS: DOCKER://kafka:29092,EXTERNAL://${DOMAIN}:9092
@@ -39,17 +37,16 @@ services:
     volumes:
       - ./kafka/ssl:/etc/kafka/secrets
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper
     labels:
       autoheal: "true"
     healthcheck:
-      # uses built-in Kafka CLI; OK if it exits 0
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 >/dev/null 2>&1"]
-      interval: 15s
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:29092 >/dev/null 2>&1"]
+      interval: 20s
       timeout: 10s
       retries: 10
-      start_period: 30s
+      start_period: 90s
+
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -178,8 +175,6 @@ services:
       - xpack.security.enabled=false
     ports:
       - 9200:9200
-    labels:
-      autoheal: "true"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=green&timeout=10s"]
       interval: 10s
@@ -205,14 +200,26 @@ services:
       - ./lua/validate_token.lua:/etc/nginx/validate_token.lua
       - ./lua:/etc/nginx/lua
     command: [ "/usr/local/openresty/bin/openresty", "-g", "daemon off;" ]
+
+  gkg:
+    build: ./gkg/
+    container_name: gkg
+    restart: unless-stopped
+    environment:
+      - GITLAB_TOKEN=${GITLAB_TOKEN:-}
+      - RUST_LOG=info
+    ports:
+      - "27495:27495"
+    volumes:
+      - ./gkg/data:/data/gkg
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:27495/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     labels:
       autoheal: "true"
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   # Autoheal: restarts containers with health=unhealthy and label autoheal=true
   autoheal:
@@ -227,6 +234,3 @@ services:
       # - AUTOHEAL_CONTAINER_LABEL=autoheal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-
-volumes:
-  # Removed prometheus_data and grafana_data as requested
