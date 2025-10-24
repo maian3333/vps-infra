@@ -1,0 +1,278 @@
+server:
+  use-forward-headers: true    # for Spring Boot ≤ 2.6
+  forward-headers-strategy: framework   # preferred in Boot 2.7+ / 3.x
+logging:
+  level:
+    ROOT: DEBUG
+    tech.jhipster: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.ticketsystem.route: DEBUG
+
+management:
+  health:
+    elasticsearch:
+      enabled: false
+  zipkin:
+    tracing:
+      # Override with ZIPKIN_ENDPOINT if set; else default to DOMAIN
+      endpoint: ${ZIPKIN_ENDPOINT:http://${DOMAIN}:9411/api/v2/spans}
+  tracing:
+    sampling:
+      probability: 1.0
+
+# springdoc must stay top-level
+springdoc:
+  api-docs:
+    enabled: true
+
+spring:
+  application:
+    # keep using your service name env (e.g., SERVER_NAME)
+    name: ${server.name}
+
+  devtools:
+    restart:
+      enabled: true
+      additional-exclude: static/**
+    livereload:
+      enabled: false
+
+  jackson:
+    serialization:
+      indent-output: true
+
+  cloud:
+    service-registry:
+      auto-registration:
+        enabled: true
+
+    stream:
+      poller:
+        fixed-delay: 100
+        max-messages-per-poll: 1
+
+      # ---- Kafka binder (shared client config) ----
+      kafka:
+        binder:
+          # Use env KAFKA_BOOTSTRAP_SERVERS or fallback to DOMAIN:9092
+          brokers: ${KAFKA_BOOTSTRAP_SERVERS:${DOMAIN}:9092}
+          auto-create-topics: true
+          auto-add-partitions: true
+          min-partition-count: 3
+          replication-factor: 1
+
+          # Raw Kafka client props
+          configuration:
+            security.protocol: SSL
+            ssl.endpoint.identification.algorithm: ""
+            # Vault-based JKS configuration for remote access
+            # NOTE: If these JKS files are NOT on the classpath, switch to file: URLs pointing to your mounted path, e.g. file:/app/config/ssl/...
+            ssl.truststore.location: ${VAULT_KAFKA_TRUSTSTORE_LOCATION:${KAFKA_TRUSTSTORE_LOCATION:file:/app/config/kafka.client.truststore.jks}}
+            ssl.truststore.password: ${VAULT_KAFKA_TRUSTSTORE_PASSWORD:${APP_F4_PASS}}
+            ssl.keystore.location: ${VAULT_KAFKA_KEYSTORE_LOCATION:${KAFKA_KEYSTORE_LOCATION:file:/app/config/kafka.broker.keystore.jks}}
+            ssl.keystore.password: ${VAULT_KAFKA_KEYSTORE_PASSWORD:${APP_F4_PASS}}
+            ssl.key.password: ${VAULT_KAFKA_KEY_PASSWORD:${APP_F4_PASS}}
+
+            connections.max.idle.ms: 540000
+            metadata.max.age.ms: 300000
+            reconnect.backoff.ms: 1000
+            reconnect.backoff.max.ms: 32000
+            request.timeout.ms: 40000
+
+            # Default consumer tuning
+            group.id: ${kafka.utility.service-name:${server.name}}-group
+            enable.auto.commit: false
+            auto.offset.reset: earliest
+            fetch.min.bytes: 1024
+            fetch.max.bytes: 52428800
+            fetch.max.wait.ms: 100
+            max.poll.records: 200
+            max.poll.interval.ms: 300000
+            session.timeout.ms: 45000
+            heartbeat.interval.ms: 15000
+            partition.assignment.strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+            receive.buffer.bytes: 65536
+            send.buffer.bytes: 131072
+            retry.backoff.ms: 1000
+
+            # Default producer tuning
+            acks: 1
+            retries: 3
+            enable.idempotence: false
+            batch.size: 32768
+            linger.ms: 10
+            buffer.memory: 67108864
+            compression.type: snappy
+            max.in.flight.requests.per.connection: 3
+            delivery.timeout.ms: 120000
+
+          producer-properties:
+            key.serializer: org.apache.kafka.common.serialization.StringSerializer
+            value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+            schema.registry.url: http://${DOMAIN}:8081
+            latest.compatibility.strict: false
+
+          consumer-properties:
+            key.deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+            value.deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+            spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+            spring.deserializer.value.delegate.class: io.confluent.kafka.serializers.KafkaAvroDeserializer
+            schema.registry.url: http://${DOMAIN}:8081
+            specific.avro.reader: true
+
+    consul:
+      enabled: true
+      host: consul.${DOMAIN}
+      port: 443
+      scheme: https
+
+      # TLS configuration
+      tls:
+        skip-verify: true
+
+
+      # Consul Discovery (service registration/discovery)
+      discovery:
+        enabled: true
+        service-name: ${SERVER_NAME}
+        # prefer-ip-address: true
+        ip-address: ${SERVER_NAME}.microservices.${DOMAIN}
+        port: 443
+        instance-id: ${SERVER_NAME} 
+        tags: urlprefix-/
+        service-path: /
+        scheme: https
+
+        # Health check configuration
+        health-check-path: /management/health
+        health-check-interval: 15s
+        health-check-tls-skip-verify: true
+
+        # ACL token for discovery
+        # acl-token: ${CONSUL_HTTP_TOKEN:}
+  data:
+    redis:
+      host: ${REDIS_HOST:${DOMAIN}}       # appf4s.io.vn
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:${APP_F4_PASS}}  # f4security
+      timeout: 3000
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    username: root
+    password:
+    hikari:
+      poolName: Hikari
+      auto-commit: false
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+    # Tip: prefer to set SPRING_DATASOURCE_URL via docker-compose env
+
+  elasticsearch:
+    # Allow override via ELASTICSEARCH_URIS or fallback to DOMAIN
+    uris: ${ELASTICSEARCH_URIS:http://${DOMAIN}:9200}
+
+  liquibase:
+    contexts: dev, faker
+    parameters:
+      csv_path: /app/config/data
+
+  messages:
+    cache-duration: PT1S
+
+  thymeleaf:
+    cache: false
+
+  security:
+    oauth2:
+      client:
+        provider:
+          oidc:
+            issuer-uri: ${KEYCLOAK_ISSUER_URI:https://keycloak.${DOMAIN}/realms/jhipster}
+
+kafka:
+  utility:
+    enabled: true
+    service-name: ${server.name}
+    environment: ${spring.profiles.active:dev}
+
+    thread-pool:
+      core-size: 4
+      max-size: 12
+      queue-capacity: 50
+      keep-alive-seconds: 60
+      thread-name-prefix: kafka-util-
+      rejection-policy: CALLER_RUNS
+
+    retry:
+      enabled: true
+      max-attempts: 2
+      backoff-period: 1000
+      backoff-multiplier: 2.0
+      max-backoff-period: 10000
+      retry-exceptions:
+        - org.apache.kafka.common.errors.RetriableException
+        - org.springframework.kafka.support.KafkaException
+        - java.net.SocketTimeoutException
+        - javax.net.ssl.SSLException
+
+    dlq:
+      enabled: true
+      topic-suffix: .dlq
+      max-retries-before-dlq: 2
+      include-headers: true
+      include-stack-trace: false
+
+    topics:
+      auto-create: true
+      default-partitions: 3
+      default-replication-factor: 1
+      configurations:
+        route-events:
+          partitions: 6
+          replication-factor: 1
+          retention-ms: 259200000
+          cleanup-policy: delete
+          segment-ms: 86400000
+
+jhipster:
+  cache:
+    redis:
+      expiration: 3600
+      server: ${REDIS_URL:redis://:${APP_F4_PASS}@${DOMAIN}:6379}
+      cluster: false
+    hazelcast: # Hazelcast distributed cache
+      time-to-live-seconds: 3600
+      backup-count: 1
+  logging:
+    use-json-format: false
+    logstash:
+      enabled: false
+      host: ${LOGSTASH_HOST:${DOMAIN}}
+      port: ${LOGSTASH_PORT:5000}
+      ring-buffer-size: 512
+
+ridehub:
+  services:
+    booking: msbooking
+    promotion: mspromotion
+    user: msuser
+    route: msroute
+    ticket: msticket
+  feign:
+    scans:
+      - basePackage: com.ridehub.msbooking.client.api
+        serviceId: ${ridehub.services.booking}
+      - basePackage: com.ridehub.mspromotion.client.api
+        serviceId: ${ridehub.services.promotion}
+      - basePackage: com.ridehub.msuser.client.api
+        serviceId: ${ridehub.services.user}
+      - basePackage: com.ridehub.msroute.client.api
+        serviceId: ${ridehub.services.route}
+  s2s:
+    token-url: https://keycloak.${tunnel.vps-host}/realms/jhipster/protocol/openid-connect/token
+    client-id: svc-admin-bootstrap
+    client-secret: EB4eohc7BEY3tw1Rjg7FS8xMLfi95n0n
+    scope:
