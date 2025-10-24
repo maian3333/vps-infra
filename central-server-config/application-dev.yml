@@ -65,6 +65,8 @@ spring:
             security.protocol: SSL
             ssl.endpoint.identification.algorithm: ""
             # Vault-based JKS configuration for remote access
+            # Primary: Vault remote JKS URLs (for production testing)
+            # Fallback: Local file paths for development
             ssl.truststore.location: ${VAULT_KAFKA_TRUSTSTORE_LOCATION:file:${server.dev-config-folder}/tls/kafka.client.truststore.jks}
             ssl.truststore.password: ${VAULT_KAFKA_TRUSTSTORE_PASSWORD:${tunnel.app-f4-pass}}
             ssl.keystore.location: ${VAULT_KAFKA_KEYSTORE_LOCATION:file:${server.dev-config-folder}/tls/kafka.broker.keystore.jks}

@@ -239,7 +239,8 @@ services:
     volumes:
       - ./vault/data:/vault/data
       - ./vault/config:/vault/config
-    command: vault server -dev -dev-root-token-id=vault-root-token -dev-listen-address=0.0.0.0:8200
+      - ./central-server-config/tls:/vault/jks:ro
+    command: vault server -config=/vault/config/vault.hcl -dev -dev-root-token-id=vault-root-token -dev-listen-address=0.0.0.0:8200
     cap_add:
       - IPC_LOCK
     labels:
@@ -251,6 +252,20 @@ services:
       retries: 10
       start_period: 10s
 
+  vault-setup:
+    image: hashicorp/vault:1.15.6
+    container_name: vault-setup
+    depends_on:
+      vault:
+        condition: service_healthy
+    volumes:
+      - ./vault/config:/vault/config:ro
+      - ./central-server-config/tls:/vault/jks:ro
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=vault-root-token
+    command: /vault/config/setup-jks.sh
+    restart: "no"
   # Autoheal: restarts containers with health=unhealthy and label autoheal=true
   autoheal:
     image: willfarrell/autoheal:latest
