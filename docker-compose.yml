@@ -200,18 +200,22 @@ services:
       - ./lua/validate_token.lua:/etc/nginx/validate_token.lua
       - ./lua:/etc/nginx/lua
     command: [ "/usr/local/openresty/bin/openresty", "-g", "daemon off;" ]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 
   gkg:
-    build: ./gkg/
-    container_name: gkg
-    restart: unless-stopped
-    environment:
-      - GITLAB_TOKEN=${GITLAB_TOKEN:-}
-      - RUST_LOG=info
-    ports:
-      - "27495:27495"
+    build:
+      context: ./gkg/
+    container_name: gkg-server
+    network_mode: host
     volumes:
+      - ../repositories:/repositories
       - ./gkg/data:/data/gkg
+    environment:
+      - RUST_LOG=info
+    restart: unless-stopped
+    command: ["gkg", "server", "start"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:27495/"]
       interval: 30s

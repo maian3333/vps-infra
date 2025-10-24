@@ -1,50 +1,28 @@
-FROM node:18-alpine
+FROM ubuntu:22.04
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Prevent interactive prompts during installation
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Create app directory
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install GKG directly
+RUN curl -fsSL https://gitlab.com/gitlab-org/rust/knowledge-graph/-/raw/main/install.sh | bash
+
+# Create working directory
 WORKDIR /app
 
-# Create configuration inline
-RUN echo '{ \
-  "server": { \
-    "host": "0.0.0.0", \
-    "port": 27495, \
-    "mode": "mcp" \
-  }, \
-  "mcp": { \
-    "name": "gkg-server", \
-    "version": "1.0.0", \
-    "description": "GitLab Knowledge Graph MCP Server" \
-  }, \
-  "gitlab": { \
-    "url": "https://gitlab.com", \
-    "token": "${GITLAB_TOKEN:-}" \
-  }, \
-  "knowledge_graph": { \
-    "storage_path": "/data/gkg", \
-    "index_repositories": true, \
-    "auto_sync": true \
-  }, \
-  "logging": { \
-    "level": "info", \
-    "file": "/data/gkg/logs/gkg.log" \
-  } \
-}' > /app/config.json
+# Create volume for code repositories
+VOLUME ["/repositories"]
 
-# Create a simple MCP-compatible HTTP server
-COPY mcp-server.js /app/mcp-server.js
-
-# Create data directory
-RUN mkdir -p /data/gkg/logs
-
-# Expose port
+# Expose GKG server port
 EXPOSE 27495
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:27495/status || exit 1
+# Add gkg to PATH
+ENV PATH="/root/.local/bin:$PATH"
 
-# Run the MCP server
-CMD ["node", "mcp-server.js"]
+# Default command
+CMD ["gkg", "server", "start", "--host", "0.0.0.0", "--port", "27495"]
