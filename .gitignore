@@ -40,3 +40,4 @@ Thumbs.db
 *.tar.gz
 *.rar
 nginx/letsencrypt/*
+central-server-config/vault-secrets.env

@@ -235,8 +235,6 @@ services:
     image: hashicorp/vault:latest
     container_name: vault
     restart: unless-stopped
-    networks:
-      - ridehub-network
     ports:
       - "8200:8200"
       - "8201:8201"
