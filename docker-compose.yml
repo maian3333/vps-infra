@@ -237,23 +237,13 @@ services:
     restart: unless-stopped
     ports:
       - "8200:8200"
-      - "8201:8201"
     environment:
-      - VAULT_ADDR=http://localhost:8200
-      - VAULT_API_ADDR=http://localhost:8200
-      - VAULT_CLUSTER_ADDR=http://localhost:8201
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_ADDR: http://0.0.0.0:8200
     volumes:
-      - ./vault/config:/vault/config
-      - vault_data:/vault/data
       - ./central-server-config:/central-server-config:ro
       - ./vault/docker-entrypoint.sh:/docker-entrypoint.sh:ro
-    entrypoint: ["/bin/sh", "/docker-entrypoint.sh"]
-    cap_add:
-      - IPC_LOCK
-    labels:
-      autoheal: "true"
-
-
+    command: [ "/bin/sh", "/docker-entrypoint.sh" ]
 
   autoheal:
     image: willfarrell/autoheal:latest
