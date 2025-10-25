@@ -3,13 +3,271 @@ configserver:
   name: Service Registry
   status: Connected to Consul running in Docker
 
-jhipster:
-  security:
-    authentication:
-      jwt:
-        base64-secret: NWJmZDlhZGJiOGVkOGE2ZjE5ZWM2ZTVjMDhmNjczODQ2OGRhYzUxOWU0MTc4ZWI3ODNhM2JkNzRkNWExZWY3ZWYyZDljZmJhNjc4NzM5NDAxYzRmMWI0YTYxZjBjYWQ0MzQ4Ng==
+tunnel:
+  vps-host: ${vps-host}
+  vps-user: ${vps-user}
+  vps-password: ${vps-password}
+
+vault:
+  vps-host: ${vps-host}
+  vps-user: ${vps-user}
+  vps-password: ${vps-password}
+  app-f4-pass: ${app-f4-pass}
+  sql-host: ${sql-host}
+  sql-port: ${sql-port}
+  redis-host: ${redis-host}
+  redis-port: ${redis-port}
+  redis-password: ${redis-password}
+  keycloak-issuer-uri: ${keycloak-issuer-uri}
+  client-id: ${client-id}
+  client-secret: ${client-secret}
+  schema-registry-url: ${schema-registry-url}
+  s2s-client-id: ${s2s-client-id}
+  s2s-client-secret: ${s2s-client-secret}
+  kafka-broker-cert: ${kafka-broker-cert}
+  kafka-broker-key: ${kafka-broker-key}
+  kafka-ca-cert: ${kafka-ca-cert}
+
+logging:
+  level:
+    ROOT: DEBUG
+    tech.jhipster: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.ridehub.route: DEBUG
+
 management:
+  health:
+    elasticsearch:
+      enabled: false
+  zipkin:
+    tracing:
+      endpoint: http://${vault.vps-host}:9411/api/v2/spans
+  tracing:
+    sampling:
+      probability: 1.0
   prometheus:
     metrics:
       export:
         enabled: true
+
+# ✅ springdoc must be top-level (NOT under spring)
+springdoc:
+  api-docs:
+    enabled: true
+
+spring:
+  application:
+    name: ${server.name}
+
+  devtools:
+    restart:
+      enabled: true
+      additional-exclude: static/**
+    livereload:
+      enabled: false
+
+  jackson:
+    serialization:
+      indent-output: true
+
+  cloud:
+    stream:
+      poller:
+        fixed-delay: 100
+        max-messages-per-poll: 1
+      # ---- Kafka binder (shared client config) ----
+      kafka:
+        binder:
+          brokers: ${vault.vps-host}:9092
+          auto-create-topics: true
+          auto-add-partitions: true
+          min-partition-count: 3
+          replication-factor: 1
+
+          # All raw Kafka client props belong under `configuration`
+          configuration:
+            security.protocol: SSL
+            ssl.endpoint.identification.algorithm: ""
+            # SSL certificate configuration from Vault
+            ssl.truststore.type: PEM
+            ssl.truststore.certificates: ${vault.kafka-ca-cert}
+            ssl.keystore.type: PEM
+            ssl.keystore.certificate.chain: ${vault.kafka-broker-cert}
+            ssl.keystore.key: ${vault.kafka-broker-key}
+            connections.max.idle.ms: 540000
+            metadata.max.age.ms: 300000
+            reconnect.backoff.ms: 1000
+            reconnect.backoff.max.ms: 32000
+            request.timeout.ms: 40000
+            # Default consumer tuning
+            group.id: ${kafka.utility.service-name:${server.name}}-group
+            enable.auto.commit: false
+            auto.offset.reset: earliest
+            fetch.min.bytes: 1024
+            fetch.max.bytes: 52428800
+            fetch.max.wait.ms: 100
+            max.poll.records: 200
+            max.poll.interval.ms: 300000
+            session.timeout.ms: 45000
+            heartbeat.interval.ms: 15000
+            partition.assignment.strategy: org.apache.kafka.clients.consumer.CooperativeStickyAssignor
+            receive.buffer.bytes: 65536
+            send.buffer.bytes: 131072
+            retry.backoff.ms: 1000
+
+            # Default producer tuning
+            acks: 1
+            retries: 3
+            enable.idempotence: false
+            batch.size: 32768
+            linger.ms: 10
+            buffer.memory: 67108864
+            compression.type: snappy
+            max.in.flight.requests.per.connection: 3
+            delivery.timeout.ms: 120000
+          producer-properties:
+            key.serializer: org.apache.kafka.common.serialization.StringSerializer
+            value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+            schema.registry.url: http://appf4s.io.vn:8081
+            latest.compatibility.strict: false
+          consumer-properties:
+            key.deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+            value.deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+            spring.deserializer.key.delegate.class: org.apache.kafka.common.serialization.StringDeserializer
+            spring.deserializer.value.delegate.class: io.confluent.kafka.serializers.KafkaAvroDeserializer
+            schema.registry.url: ${vault.schema-registry-url}
+            specific.avro.reader: true
+  data:
+    redis:
+      host: ${REDIS_HOST:${vault.vps-host}} # appf4s.io.vn
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:${vault.app-f4-pass}} # f4security
+      timeout: 3000
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    # Use envs and fallback defaults; DB name defaults to app name
+    url: "jdbc:mysql://${vault.sql-host}:${server.sql-port}/${server.sql-name}?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&allowLoadLocalInfile=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&connectTimeout=20000&socketTimeout=600000"
+    username: root
+    password:
+    hikari:
+      poolName: Hikari
+      auto-commit: false
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        prepStmtCacheSqlLimit: 2048
+        useServerPrepStmts: true
+
+  elasticsearch:
+    uris: http://${vault.vps-host}:9200
+
+  liquibase:
+    contexts: dev, faker
+    parameters:
+      csv_path: ${server.dev-config-folder}/data
+
+  messages:
+    cache-duration: PT1S
+
+  thymeleaf:
+    cache: false
+
+  security:
+    oauth2:
+      client:
+        provider:
+          oidc:
+            issuer-uri: ${vault.keycloak-issuer-uri}
+        registration:
+          oidc:
+            client-id: ${vault.client-id}
+            client-secret: ${vault.client-secret}
+            scope: openid, profile, email, offline_access # last one for refresh tokens
+kafka:
+  utility:
+    enabled: true
+    service-name: ${server.name}
+    environment: ${spring.profiles.active:dev}
+
+    thread-pool:
+      core-size: 4
+      max-size: 12
+      queue-capacity: 50
+      keep-alive-seconds: 60
+      thread-name-prefix: kafka-util-
+      rejection-policy: CALLER_RUNS
+
+    retry:
+      enabled: true
+      max-attempts: 2
+      backoff-period: 1000
+      backoff-multiplier: 2.0
+      max-backoff-period: 10000
+      retry-exceptions:
+        - org.apache.kafka.common.errors.RetriableException
+        - org.springframework.kafka.support.KafkaException
+        - java.net.SocketTimeoutException
+        - javax.net.ssl.SSLException
+
+    dlq:
+      enabled: true
+      topic-suffix: .dlq
+      max-retries-before-dlq: 2
+      include-headers: true
+      include-stack-trace: false
+
+    topics:
+      auto-create: true
+      default-partitions: 3
+      default-replication-factor: 1
+      configurations:
+        route-events:
+          partitions: 6
+          replication-factor: 1
+          retention-ms: 259200000
+          cleanup-policy: delete
+          segment-ms: 86400000
+
+jhipster:
+  cache:
+    redis:
+      expiration: 3600
+      server: redis://:${vault.app-f4-pass}@${vault.vps-host}:6379
+      cluster: false
+    hazelcast: # Hazelcast distributed cache
+      time-to-live-seconds: 3600
+      backup-count: 1
+  logging:
+    use-json-format: false
+    logstash:
+      enabled: false
+      host: ${vault.vps-host}
+      port: 5000
+      ring-buffer-size: 512
+  security:
+    authentication:
+      jwt:
+        base64-secret: NWJmZDlhZGJiOGVkOGE2ZjE5ZWM2ZTVjMDhmNjczODQ2OGRhYzUxOWU0MTc4ZWI3ODNhM2JkNzRkNWExZWY3ZWYyZDljZmJhNjc4NzM5NDAxYzRmMWI0YTYxZjBjYWQ0MzQ4Ng==
+
+ridehub:
+  services:
+    booking: msbooking
+    promotion: mspromotion
+    user: msuser
+    route: msroute
+    ticket: msticket
+  feign:
+    scans:
+      - basePackage: com.ridehub.msbooking.client.api
+        serviceId: ${ridehub.services.booking}
+      - basePackage: com.ridehub.mspromotion.client.api
+        serviceId: ${ridehub.services.promotion}
+      - basePackage: com.ridehub.msuser.client.api
+        serviceId: ${ridehub.services.user}
+      - basePackage: com.ridehub.msroute.client.api
+        serviceId: ${ridehub.services.route}
+  s2s:
+    token-url: ${vault.keycloak-issuer-uri}/protocol/openid-connect/token
+    client-id: ${vault.s2s-client-id}
+    client-secret: ${vault.s2s-client-secret}
+    scope:
