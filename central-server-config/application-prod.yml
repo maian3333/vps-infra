@@ -1,0 +1,5 @@
+spring:
+  liquibase:
+    contexts: dev, faker
+    parameters:
+      csv_path: /app/config/data

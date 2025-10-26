@@ -3,6 +3,9 @@ configserver:
   name: Service Registry
   status: Connected to Consul running in Docker
 
+
+
+
 tunnel:
   vps-host: ${vps-host}
   vps-user: ${vps-user}
@@ -146,7 +149,6 @@ spring:
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
     # Use envs and fallback defaults; DB name defaults to app name
-    url: "jdbc:mysql://${vault.sql-host}:${server.sql-port}/${server.sql-name}?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&allowLoadLocalInfile=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&connectTimeout=20000&socketTimeout=600000"
     username: root
     password:
     hikari:
@@ -161,11 +163,7 @@ spring:
   elasticsearch:
     uris: http://${vault.vps-host}:9200
 
-  liquibase:
-    contexts: dev, faker
-    parameters:
-      csv_path: ${server.dev-config-folder}/data
-
+  
   messages:
     cache-duration: PT1S
 
@@ -248,6 +246,7 @@ jhipster:
     authentication:
       jwt:
         base64-secret: NWJmZDlhZGJiOGVkOGE2ZjE5ZWM2ZTVjMDhmNjczODQ2OGRhYzUxOWU0MTc4ZWI3ODNhM2JkNzRkNWExZWY3ZWYyZDljZmJhNjc4NzM5NDAxYzRmMWI0YTYxZjBjYWQ0MzQ4Ng==
+
 
 ridehub:
   services:
