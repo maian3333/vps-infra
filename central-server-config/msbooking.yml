@@ -1,0 +1,129 @@
+# ===================================================================
+# Spring Boot configuration for the "dev" profile.
+#
+# This configuration overrides the application.yml file.
+#
+# More information on profiles: https://www.jhipster.tech/profiles/
+# More information on configuration properties: https://www.jhipster.tech/common-application-properties/
+# ===================================================================
+
+# ===================================================================
+# Standard Spring Boot properties.
+# Full reference is available at:
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+
+
+spring:
+  jpa:
+    properties:
+      hibernate.cache.use_second_level_cache: false
+      hibernate.cache.use_query_cache: false
+
+    # Then service-specific config (will override shared)
+  # ===================================================================
+  # DEV profile - fixed and tidied
+  # ===================================================================
+  cloud:
+    function:
+      definition: kafkaProducer;kafkaConsumer;dlqConsumer
+    stream:
+      bindings:
+        # Main consumer binding
+        kafkaConsumer-in-0:
+          destination: ${server.name}.events
+          content-type: application/*+avro
+          group: ${server.name}-route-group
+          consumer:
+            use-native-decoding: true
+            # Retry configuration
+            max-attempts: 3
+            back-off-initial-interval: 1000
+            back-off-multiplier: 2.0
+            back-off-max-interval: 10000
+            # DLQ configuration - CRITICAL for DLQ to work
+            enable-dlq: true
+            dlq-name: ${server.name}.events.dlq
+            republish-to-dlq: true
+            # Concurrency
+            concurrency: 2
+
+        # Producer binding
+        kafkaProducer-out-0:
+          destination: ${server.name}.events
+          contentType: application/*+avro
+          producer:
+            useNativeEncoding: true
+
+        # DLQ consumer binding (optional - for monitoring failed messages)
+        dlqConsumer-in-0:
+          destination: ${server.name}.events.dlq
+          content-type: application/octet-stream
+          group: ${server.name}-dlq-group
+          consumer:
+            use-native-decoding: true
+            max-attempts: 1
+
+      # Kafka-specific configurations
+      kafka:
+        bindings:
+          kafkaConsumer-in-0:
+            consumer:
+              # Enable DLQ at Kafka level
+              enableDlq: true
+              dlqName: ${server.name}.events.dlq
+              # Ensure proper serialization for DLQ messages
+              dlqProducerProperties:
+                key.serializer: org.apache.kafka.common.serialization.StringSerializer
+                value.serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+
+          dlqConsumer-in-0:
+            consumer:
+              # DLQ consumer properties
+              startOffset: latest
+
+vnpay:
+  tmn-code: ${VNPAY_TMN_CODE:FCFK1679}
+  hash-secret: ${VNPAY_HASH_SECRET:69ML0ON3RUOD1F4L1YWZ4DO3L9NY54Q2}
+  pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+  query-url: ${VNPAY_QUERY_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
+  refund-url: ${VNPAY_REFUND_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
+  return-url: ${VNPAY_RETURN_URL:https://apigateway.microservices.appf4s.io.vn/services/msbooking/api/payment/vnpay/callback}
+  version: 2.1.0
+  command: pay
+  order-type: other
+  locale: vn
+  curr-code: VND
+  # Refund configuration
+  refund-transaction-type-full: 02  # Full refund
+  refund-transaction-type-partial: 03  # Partial refund
+  refund-create-by: system
+
+# ===================================================================
+# MoMo Configuration
+# ===================================================================
+momo:
+  partner-code: ${MOMO_PARTNER_CODE:}
+  access-key: ${MOMO_ACCESS_KEY:}
+  secret-key: ${MOMO_SECRET_KEY:}
+  endpoint: ${MOMO_ENDPOINT:https://test-payment.momo.vn/v2/gateway/api/create}
+  return-url: ${MOMO_RETURN_URL:http://localhost:8084/api/momo/return}
+  notify-url: ${MOMO_NOTIFY_URL:http://localhost:8084/api/momo/notify}
+  request-type: payWithATM
+  order-info: Payment via MoMo
+  lang: vi
+  auto-capture: true
+
+# ===================================================================
+# ZaloPay Configuration
+# ===================================================================
+zalopay:
+  app-id: ${ZALOPAY_APP_ID:}
+  key1: ${ZALOPAY_KEY1:}
+  key2: ${ZALOPAY_KEY2:}
+  endpoint: ${ZALOPAY_ENDPOINT:https://sb-openapi.zalopay.vn/v2/create}
+  callback-url: ${ZALOPAY_CALLBACK_URL:http://localhost:8084/api/zalopay/callback}
+  description: Payment via ZaloPay
+  embed-data: "{}"
+  bank-code: ""
+  item-data: "[]"
