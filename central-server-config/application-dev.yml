@@ -1,8 +1,0 @@
-spring:
-  liquibase:
-    contexts: dev, faker
-    parameters:
-      csv_path: src/main/resources/config/liquibase
-  datasource:
-    url: "jdbc:mysql://${vault.sql-host}:${server.sql-port}/${server.sql-name}?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&allowLoadLocalInfile=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&connectTimeout=20000&socketTimeout=600000"
-    # url: "jdbc:mysql://localhost:3306/${server.sql-name}?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&allowLoadLocalInfile=true&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048&connectTimeout=20000&socketTimeout=600000"
