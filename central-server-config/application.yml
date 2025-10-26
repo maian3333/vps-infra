@@ -3,6 +3,9 @@ configserver:
   name: Service Registry
   status: Connected to Consul running in Docker
 
+server:
+  use-forward-headers: true    # for Spring Boot ≤ 2.6
+  forward-headers-strategy: framework   # preferred in Boot 2.7+ / 3.x
 
 
 

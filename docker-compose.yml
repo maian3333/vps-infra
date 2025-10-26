@@ -249,8 +249,8 @@ services:
       VAULT_ADDR: http://0.0.0.0:8200
     volumes:
       - ./central-server-config:/central-server-config:ro
-      - ./vault/docker-entrypoint.sh:/docker-entrypoint.sh:ro
-    command: [ "/bin/sh", "/docker-entrypoint.sh" ]
+      - ./vault/vault-startup.sh:/vault-startup.sh:ro
+    command: [ "/bin/sh", "/vault-startup.sh" ]
 
   autoheal:
     image: willfarrell/autoheal:latest
