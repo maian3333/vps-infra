@@ -1,41 +1,27 @@
-#!/bin/sh
-set -eu
+# ==========================
+# DOMAIN & TLS
+# ==========================
+DOMAIN=appf4s.io.vn
+APP_F4_PASS=f4security
+SQL_HOST=sql.appf4s.io.vn
+# ==========================
+# Keycloak
+# ==========================
+KEYCLOAK_ADMIN=admin
+KEYCLOAK_ADMIN_PASSWORD=admin
 
-# Start Vault in dev mode (root token: root)
-vault server -dev -dev-root-token-id=root -dev-listen-address="0.0.0.0:8200" &
-sleep 5
 
 
-# Load environment vars
-if [ -f /central-server-config/vault-secrets.env ]; then
-  . /central-server-config/vault-secrets.env
-fi
+MS_ROUTE_DB_PORT=3307
+MS_USER_DB_PORT=3308
+MS_BOOKING_DB_PORT=3309
+MS_PAYMENT_DB_PORT=3310
+MS_NOTIFICATION_DB_PORT=3311
 
-# Just write directly — no checks
-vault kv put secret/infrastructure \
-  vps-host="${VPS_HOST:-}" \
-  vps-user="${VPS_USER:-}" \
-  vps-password="${VPS_PASSWORD:-}" \
-  app-f4-pass="${APP_F4_PASS:-}" \
-  sql-host="${SQL_HOST:-}" \
-  sql-port="${SQL_PORT:-}" \
-  redis-host="${REDIS_HOST:-}" \
-  redis-port="${REDIS_PORT:-}" \
-  redis-password="${REDIS_PASSWORD:-}" \
-  keycloak-issuer-uri="${KEYCLOAK_ISSUER_URI:-}" \
-  client-id="${CLIENT_ID:-}" \
-  client-secret="${CLIENT_SECRET:-}" \
-  schema-registry-url="${SCHEMA_REGISTRY_URL:-}" \
-  s2s-client-id="${S2S_CLIENT_ID:-}" \
-  s2s-client-secret="${S2S_CLIENT_SECRET:-}"
 
-# Optional Kafka certs
-if [ -f /central-server-config/tls/kafka-broker-cert.pem ]; then
-  vault kv put secret/common-kafka \
-    kafka-broker-cert="$(cat /central-server-config/tls/kafka-broker-cert.pem)" \
-    kafka-broker-key="$(cat /central-server-config/tls/kafka-broker-key.pem)" \
-    kafka-ca-cert="$(cat /central-server-config/tls/kafka-ca-cert.pem)"
-fi
-
-# Keep Vault alive
-wait
+GATEWAY_PORT=8080
+MS_ROUTE_PORT=8082
+MS_USER_PORT=8083
+MS_BOOKING_PORT=8084
+MS_PAYMENT_PORT=8085
+MS_NOTIFICATION_PORT=8086

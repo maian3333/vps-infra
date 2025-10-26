@@ -28,10 +28,10 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
       # JKS SSL Configuration (temporary - will migrate apps to Vault PEM)
       KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.broker.keystore.jks
-      KAFKA_SSL_KEYSTORE_PASSWORD: f4security
-      KAFKA_SSL_KEY_PASSWORD: f4security
+      KAFKA_SSL_KEYSTORE_PASSWORD: ${APP_F4_PASS}
+      KAFKA_SSL_KEY_PASSWORD: ${APP_F4_PASS}
       KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.client.truststore.jks
-      KAFKA_SSL_TRUSTSTORE_PASSWORD: f4security
+      KAFKA_SSL_TRUSTSTORE_PASSWORD: ${APP_F4_PASS}
       KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -245,7 +245,7 @@ services:
     ports:
       - "8200:8200"
     environment:
-      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_DEV_ROOT_TOKEN_ID: ${APP_F4_PASS}
       VAULT_ADDR: http://0.0.0.0:8200
     volumes:
       - ./central-server-config:/central-server-config:ro
