@@ -1,28 +1,16 @@
-FROM ubuntu:22.04
+FROM debian:stable-slim
 
-# Prevent interactive prompts during installation
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl git wget socat \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and install GKG directly
-RUN curl -fsSL https://gitlab.com/gitlab-org/rust/knowledge-graph/-/raw/main/install.sh | bash
+# Install GitLab Knowledge Graph (GKG)
+RUN bash -lc 'curl -fsSL https://gitlab.com/gitlab-org/rust/knowledge-graph/-/raw/main/install.sh | bash'
+ENV PATH="/root/.local/bin:${PATH}"
 
-# Create working directory
-WORKDIR /app
+WORKDIR /workspace
 
-# Create volume for code repositories
-VOLUME ["/repositories"]
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && sed -i 's/\r$//' /entrypoint.sh
 
-# Expose GKG server port
-EXPOSE 27495
-
-# Add gkg to PATH
-ENV PATH="/root/.local/bin:$PATH"
-
-# Default command
-CMD ["gkg", "server", "start", "--host", "0.0.0.0", "--port", "27495"]
+ENTRYPOINT ["/entrypoint.sh"]

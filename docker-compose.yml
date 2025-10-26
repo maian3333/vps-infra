@@ -192,9 +192,9 @@ services:
     build: ./nginx/
     container_name: nginx
     restart: unless-stopped
-    depends_on:
-      keycloak:
-        condition: service_healthy
+    # depends_on:
+    #   keycloak:
+    #     condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
@@ -212,32 +212,19 @@ services:
 
   gkg:
     build:
-      context: ./gkg/
-    container_name: gkg-server
-    network_mode: host
+      context: ./gkg
+    container_name: gkg
+    restart: unless-stopped
     volumes:
       - ../repositories:/repositories
       - ./gkg/data:/data/gkg
-    environment:
-      - RUST_LOG=info
-      # Try one of these (uncomment the one your binary supports):
-      - GKG_BIND=0.0.0.0:27495
-      - BIND_ADDR=0.0.0.0:27495
-      - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=27495
-    restart: unless-stopped
-    # if flags instead of env:
-    # command: ["gkg","server","start","--bind","0.0.0.0:27495"]
-    command: [ "gkg", "server", "start" ]
+    expose:
+      - "27496"
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://127.0.0.1:27495/" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-    labels:
-      autoheal: "true"
-
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:27495/ >/dev/null || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
   vault:
     image: hashicorp/vault:latest
     container_name: vault
