@@ -2,9 +2,9 @@
 set -e
 
 # --- Load envs early (so APP_F4_PASS can come from the file if present) ---
-if [ -f /central-server-config/vault-secrets.env ]; then
+if [ -f vault-secrets.env ]; then
   # shellcheck disable=SC1091
-  . /central-server-config/vault-secrets.env
+  . vault-secrets.env
 fi
 
 # Prefer VAULT_DEV_ROOT_TOKEN_ID (from compose), fallback to APP_F4_PASS, then "root"
