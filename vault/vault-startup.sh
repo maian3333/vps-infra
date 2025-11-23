@@ -1,4 +1,4 @@
-#!/bin/sh
+99;6u#!/bin/sh
 set -e
 
 # --- Load envs early (so APP_F4_PASS can come from the file if present) ---
@@ -40,7 +40,8 @@ vault kv put secret/infrastructure \
   client-secret="${CLIENT_SECRET:-}" \
   schema-registry-url="${SCHEMA_REGISTRY_URL:-}" \
   s2s-client-id="${S2S_CLIENT_ID:-}" \
-  s2s-client-secret="${S2S_CLIENT_SECRET:-}"
+  s2s-client-secret="${S2S_CLIENT_SECRET:-}" \
+  zai-api-key="${ZAI_API_KEY:-}"
 
 # Optional Kafka certs
 if [ -f /central-server-config/tls/kafka-broker-cert.pem ]; then
