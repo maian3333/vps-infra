@@ -1,14 +1,28 @@
+
+set -o allexport
+source .env
+set +o allexport
+
+cat > nginx/cloudflare.ini <<EOF
+dns_cloudflare_api_token = ${DNS_CLOUDFLARE_API_TOKEN}
+EOF
+
+# 3. Lock down permissions (required by certbot)
+chmod 600 nginx/cloudflare.ini
+
+
 docker run -it --rm \
-  -v $(pwd)/nginx/letsencrypt:/etc/letsencrypt \
-  -v $(pwd)/nginx/cloudflare.ini:/cloudflare.ini \
+  -v "$(pwd)/nginx/letsencrypt:/etc/letsencrypt" \
+  -v "$(pwd)/nginx/cloudflare.ini:/cloudflare.ini" \
   certbot/dns-cloudflare certonly \
   --dns-cloudflare \
   --dns-cloudflare-credentials /cloudflare.ini \
-  -d '*.appf4s.io.vn' \
-  -d appf4s.io.vn \
+  -d "*.${DOMAIN}" \
+  -d "${DOMAIN}" \
   --email shegga9x@gmail.com \
   --agree-tos \
   --non-interactive
+
 
 
 export APP_F4_PASS="your_password_here"

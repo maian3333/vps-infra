@@ -946,15 +946,15 @@
         "http://localhost:*",
         "https://127.0.0.1:*",
         "https://localhost:*",
-        "https://kafdrop.appf4s.io.vn/oauth2/callback",
-        "https://consul.appf4s.io.vn/oauth2/callback",
-        "https://redisinsiight.appf4s.io.vn/oauth2/callback"
+        "https://kafdrop.appf4.io.vn/oauth2/callback",
+        "https://consul.appf4.io.vn/oauth2/callback",
+        "https://redisinsiight.appf4.io.vn/oauth2/callback"
       ],
       "webOrigins": [
         "*",
-        "https://kafdrop.appf4s.io.vn",
-        "https://consul.appf4s.io.vn",
-        "https://redisinsiight.appf4s.io.vn"
+        "https://kafdrop.appf4.io.vn",
+        "https://consul.appf4.io.vn",
+        "https://redisinsiight.appf4.io.vn"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -1124,22 +1124,22 @@
         "http://localhost:8080/*",
         "http://localhost:8100/*",
         "http://127.0.0.1:8761/*",
-        "https://consul.appf4s.io.vn/oauth2/callback",
+        "https://consul.appf4.io.vn/oauth2/callback",
         "http://localhost:4200/*",
-        "https://apigateway.microservices.appf4s.io.vn/*",
-        "https://kafdrop.appf4s.io.vn/oauth2/callback",
-        "https://redisinsiight.appf4s.io.vn/oauth2/callback",
+        "https://apigateway.microservices.appf4.io.vn/*",
+        "https://kafdrop.appf4.io.vn/oauth2/callback",
+        "https://redisinsiight.appf4.io.vn/oauth2/callback",
         "http://localhost:9000/*",
         "https://localhost:8080/*"
       ],
       "webOrigins": [
-        "https://consul.appf4s.io.vn",
-        "https://kafdrop.appf4s.io.vn",
+        "https://consul.appf4.io.vn",
+        "https://kafdrop.appf4.io.vn",
         "http://127.0.0.1:8761",
         "http://localhost:8080",
-        "https://apigateway.microservices.appf4s.io.vn",
+        "https://apigateway.microservices.appf4.io.vn",
         "http://localhost:4200",
-        "https://redisinsiight.appf4s.io.vn",
+        "https://redisinsiight.appf4.io.vn",
         "http://localhost:9000",
         "http://localhost:8100",
         "https://localhost:8080"

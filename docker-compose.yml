@@ -150,7 +150,7 @@ services:
     volumes:
       - ./realm-config:/opt/keycloak/data/import
       - ./realm-config/keycloak-health-check.sh:/opt/keycloak/health-check.sh
-      - ./keycloak-custom-reg/lib:/opt/keycloak/providers
+      # - ./keycloak-custom-reg/lib:/opt/keycloak/providers
     environment:
       - KC_DB=dev-file
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
@@ -173,21 +173,6 @@ services:
     labels:
       autoheal: "true"
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
-    restart: unless-stopped
-    environment:
-      - ES_JAVA_OPTS=-Xms256m -Xmx256m
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-    ports:
-      - 9200:9200
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=green&timeout=10s" ]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-
   nginx:
     build: ./nginx/
     container_name: nginx
@@ -198,6 +183,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN}
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d
@@ -210,21 +197,6 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  gkg:
-    build:
-      context: ./gkg
-    container_name: gkg
-    restart: unless-stopped
-    volumes:
-      - ../repositories:/repositories
-      - ./gkg/data:/data/gkg
-    expose:
-      - "27496"
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://localhost:27495/ >/dev/null || exit 1" ]
-      interval: 15s
-      timeout: 5s
-      retries: 20
   vault:
     image: hashicorp/vault:latest
     container_name: vault
@@ -239,7 +211,39 @@ services:
       - ./.env:/vault-secrets.env:ro
       - ./vault/vault-startup.sh:/vault-startup.sh:ro
     command: [ "/bin/sh", "/vault-startup.sh" ]
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
 
+  promtail:
+    image: grafana/promtail:3.1.1
+    container_name: promtail
+    restart: unless-stopped
+    user: "0" # chạy bằng root để đọc được docker.sock
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./observability/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
   autoheal:
     image: willfarrell/autoheal:latest
     container_name: autoheal
@@ -252,29 +256,59 @@ services:
       # - AUTOHEAL_CONTAINER_LABEL=autoheal
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+  # sms-gateway:
+  #   image: ghcr.io/android-sms-gateway/server:latest
+  #   container_name: sms-gateway
+  #   ports:
+  #     - "3002:3000"
+  #   volumes:
+  #     - ./sms-config/configsms.yml:/app/config.yml
+  #   restart: unless-stopped
+  #   depends_on:
+  #     sms-mysql:
+  #       condition: service_started
+  # sms-mysql:
+  #   image: mysql:9.2.0
+  #   volumes:
+  #     - ./config/mysql:/etc/mysql/conf.d
+  #   ports:
+  #     - "3306:3306"
+  #   environment:
+  #     MYSQL_DATABASE: sms
+  #     MYSQL_ROOT_PASSWORD: rootpassword
+  #     MYSQL_USER: smsuser
+  #     MYSQL_PASSWORD: smspassword
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+  #   restart: unless-stopped
+  #   environment:
+  #     - ES_JAVA_OPTS=-Xms256m -Xmx256m
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=false
+  #   ports:
+  #     - 9200:9200
+  #   healthcheck:
+  #     test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=green&timeout=10s" ]
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 10
 
-  sms-gateway:
-    image: ghcr.io/android-sms-gateway/server:latest
-    container_name: sms-gateway
-    ports:
-      - "3002:3000"
-    volumes:
-      - ./sms-config/configsms.yml:/app/config.yml
-    restart: unless-stopped
-    depends_on:
-      sms-mysql:
-        condition: service_started
-  sms-mysql:
-    image: mysql:9.2.0
-    volumes:
-      - ./config/mysql:/etc/mysql/conf.d
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_DATABASE: sms
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_USER: smsuser
-      MYSQL_PASSWORD: smspassword
+  # gkg:
+  #   build:
+  #     context: ./gkg
+  #   container_name: gkg
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ../repositories:/repositories
+  #     - ./gkg/data:/data/gkg
+  #   expose:
+  #     - "27496"
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "curl -fsS http://localhost:27495/ >/dev/null || exit 1" ]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 20
 
 volumes:
   vault_data:
+  grafana_data:
