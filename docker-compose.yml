@@ -3,65 +3,74 @@ networks:
     driver: bridge
 
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-
   kafka:
-    image: confluentinc/cp-kafka:7.6.0
+    image: quay.io/strimzi/kafka:0.48.0-kafka-4.1.0
     container_name: kafka
+    hostname: kafka
     restart: unless-stopped
+    user: root
+    command:
+      - /bin/bash
+      - -c
+      - |
+        # Set log directory to writable location
+        export LOG_DIR=/tmp/kafka-logs
+        mkdir -p $$LOG_DIR
+        # Format KRaft storage (only if not already formatted)
+        export CLUSTER_ID=$${CLUSTER_ID:-kafka-cluster-01}
+        if [ ! -f /var/lib/kafka/data/meta.properties ]; then
+          bin/kafka-storage.sh format -t $$CLUSTER_ID -c /tmp/kraft-config.properties
+        fi
+        # Start Kafka
+        bin/kafka-server-start.sh /tmp/kraft-config.properties
     ports:
-      - "9092:9092"
+      - "9094:9092"  # External SSL (moved from 9092)
+      - "9093:9093"  # OAuth SASL_SSL
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_HEAP_OPTS: "-Xms512m -Xmx512m" # heap floor/ceiling
-      KAFKA_JVM_PERFORMANCE_OPTS: >-
-        -server -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -Djava.awt.headless=true
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: DOCKER:PLAINTEXT,EXTERNAL:SSL
-      KAFKA_ADVERTISED_LISTENERS: DOCKER://kafka:29092,EXTERNAL://${DOMAIN}:9092
-      KAFKA_LISTENERS: DOCKER://:29092,EXTERNAL://:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
-      # JKS SSL Configuration (temporary - will migrate apps to Vault PEM)
-      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.broker.keystore.jks
-      KAFKA_SSL_KEYSTORE_PASSWORD: ${APP_F4_PASS}
-      KAFKA_SSL_KEY_PASSWORD: ${APP_F4_PASS}
-      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.client.truststore.jks
-      KAFKA_SSL_TRUSTSTORE_PASSWORD: ${APP_F4_PASS}
-      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Cluster ID for KRaft
+      CLUSTER_ID: kafka-cluster-01
+      # Disable GC logging to avoid permission issues
+      KAFKA_GC_LOG_OPTS: " "
+      # Kafka logging for OAuth
+      KAFKA_LOG4J_LOGGERS: "io.strimzi.kafka.oauth=DEBUG,org.apache.kafka.common.security.oauthbearer=DEBUG"
+      # SSL passwords
+      APP_F4_PASS: ${APP_F4_PASS}
       # Vault integration
       VAULT_ADDR: http://vault:8200
       VAULT_TOKEN: root
       SPRING_CLOUD_VAULT_URI: http://vault:8200
       SPRING_CLOUD_VAULT_TOKEN: root
     volumes:
-      - ./central-server-config/tls:/etc/kafka/secrets:ro
+      # Mount KRaft configuration file
+      - ./central-server-config/kafka-config/kraft-config.properties:/tmp/kraft-config.properties:ro
+      # SSL certificates (used for all listeners)
+      - ./central-server-config/tls/kafka.broker.keystore.jks:/etc/kafka/secrets/kafka.broker.keystore.jks:ro
+      - ./central-server-config/tls/kafka.client.truststore.jks:/etc/kafka/secrets/kafka.client.truststore.jks:ro
+      # CA certificates for remote Keycloak
+      - /etc/ssl/certs:/etc/ssl/certs:ro
+      # Persistent data
+      - kafka-oauth-data:/var/lib/kafka/data
     depends_on:
-      - zookeeper
       - vault
     labels:
       autoheal: "true"
     healthcheck:
-      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka:29092 >/dev/null 2>&1" ]
-      interval: 20s
-      timeout: 10s
-      retries: 10
-      start_period: 90s
+      test: ["CMD-SHELL", "nc -z localhost 9093 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     restart: unless-stopped
+    ports:
+      - "8080:8080"
     environment:
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:19092
       - JVM_OPTS=-Xms256M -Xmx512M
+      - APP_F4_PASS=${APP_F4_PASS}
     volumes:
       - ./central-server-config/tls:/etc/kafka/secrets:ro
     depends_on:
@@ -278,3 +287,5 @@ services:
 
 volumes:
   vault_data:
+  kafka-oauth-data:
+    driver: local
