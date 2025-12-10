@@ -24,8 +24,8 @@ services:
         # Start Kafka
         bin/kafka-server-start.sh /tmp/kraft-config.properties
     ports:
-      - "9094:9092"  # External SSL (moved from 9092)
-      - "9093:9093"  # OAuth SASL_SSL
+      - "9094:9092" # External SSL (moved from 9092)
+      - "9093:9093" # OAuth SASL_SSL
     environment:
       # Cluster ID for KRaft
       CLUSTER_ID: kafka-cluster-01
@@ -51,11 +51,14 @@ services:
       # Persistent data
       - kafka-oauth-data:/var/lib/kafka/data
     depends_on:
-      - vault
+      vault:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
     labels:
       autoheal: "true"
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 9093 || exit 1"]
+      test: [ "CMD-SHELL", "nc -z localhost 9093 || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -157,8 +160,8 @@ services:
       - "--hostname-admin=https://keycloak.${DOMAIN}"
       - "--hostname-strict=true"
     volumes:
-      - ./realm-config:/opt/keycloak/data/import
-      - ./realm-config/keycloak-health-check.sh:/opt/keycloak/health-check.sh
+      - ./central-server-config/realm-config:/opt/keycloak/data/import
+      - ./central-server-config/realm-config/keycloak-health-check.sh:/opt/keycloak/health-check.sh
       # - ./keycloak-custom-reg/lib:/opt/keycloak/providers
     environment:
       - KC_DB=dev-file
@@ -194,6 +197,9 @@ services:
       - "443:443"
     environment:
       - DOMAIN=${DOMAIN}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID}
+      - CONSUL_HTTP_TOKEN=${APP_F4_PASS}
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d
@@ -202,7 +208,10 @@ services:
       - ./nginx/log:/var/log/nginx
       - ./lua/validate_token.lua:/etc/nginx/validate_token.lua
       - ./lua:/etc/nginx/lua
-    command: [ "/usr/local/openresty/bin/openresty", "-g", "daemon off;" ]
+      - ./central-server-config/nginx-init.sh:/etc/nginx/nginx-init.sh:ro
+      - ./lua:/etc/nginx/lua
+      - ./central-server-config/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    command: [ "/bin/sh", "/etc/nginx/nginx-init.sh" ]
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -248,7 +257,7 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_PASSWORD=${APP_F4_PASS}
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
