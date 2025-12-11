@@ -36,8 +36,8 @@ vault kv put secret/infrastructure \
   redis-port="${REDIS_PORT:-}" \
   redis-password="${REDIS_PASSWORD:-}" \
   keycloak-issuer-uri="${KEYCLOAK_ISSUER_URI:-}" \
-  client-id="${CLIENT_ID:-}" \
-  client-secret="${CLIENT_SECRET:-}" \
+  client-id="${OIDC_CLIENT_ID:-}" \
+  client-secret="${OIDC_CLIENT_SECRET:-}" \
   schema-registry-url="${SCHEMA_REGISTRY_URL:-}" \
   s2s-client-id="${S2S_CLIENT_ID:-}" \
   s2s-client-secret="${S2S_CLIENT_SECRET:-}" \
