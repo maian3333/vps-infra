@@ -24,8 +24,11 @@ services:
         # Start Kafka
         bin/kafka-server-start.sh /tmp/kraft-config.properties
     ports:
+      # - "127.0.0.1:9094:9092" # External SSL (moved from 9092) - localhost only
+      # - "127.0.0.1:9093:9093" # OAuth SASL_SSL - localhost only
       - "9094:9092" # External SSL (moved from 9092)
       - "9093:9093" # OAuth SASL_SSL
+
     environment:
       # Cluster ID for KRaft
       CLUSTER_ID: kafka-cluster-01
@@ -55,6 +58,8 @@ services:
         condition: service_started
       keycloak:
         condition: service_healthy
+      nginx:
+        condition: service_started
     labels:
       autoheal: "true"
     healthcheck:
@@ -68,8 +73,8 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    # ports:
+    #   - "8080:8080"
     environment:
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:19092
       - JVM_OPTS=-Xms256M -Xmx512M
@@ -77,7 +82,7 @@ services:
     volumes:
       - ./central-server-config/tls:/etc/kafka/secrets:ro
     depends_on:
-      kafka:
+      keycloak:
         condition: service_healthy
     labels:
       autoheal: "true"
@@ -91,10 +96,10 @@ services:
   consul:
     image: hashicorp/consul:1.21.0
     restart: unless-stopped
-    ports:
-      - 8300:8300
-      - 8500:8500
-      - 8600:8600
+    # ports:
+    #   - 8300:8300
+    #   - 8500:8500
+    #   - 8600:8600
     command: consul agent -dev -ui -client 0.0.0.0 -log-level=INFO
     labels:
       autoheal: "true"
@@ -124,7 +129,7 @@ services:
     image: redis:7.4.2
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379" # localhost only
     command: redis-server --requirepass ${APP_F4_PASS}
     labels:
       autoheal: "true"
@@ -189,9 +194,9 @@ services:
     build: ./nginx/
     container_name: nginx
     restart: unless-stopped
-    # depends_on:
-    #   keycloak:
-    #     condition: service_healthy
+    depends_on:
+      keycloak:
+        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
@@ -219,8 +224,8 @@ services:
     image: hashicorp/vault:latest
     container_name: vault
     restart: unless-stopped
-    ports:
-      - "8200:8200"
+    # ports:
+    #   - "8200:8200"
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: ${APP_F4_PASS}
       VAULT_ADDR: http://0.0.0.0:8200
@@ -233,8 +238,8 @@ services:
     image: grafana/loki:3.1.1
     container_name: loki
     restart: unless-stopped
-    ports:
-      - "3100:3100"
+    # ports:
+    #   - "3100:3100"
 
   promtail:
     image: grafana/promtail:3.1.1
@@ -253,8 +258,8 @@ services:
     image: grafana/grafana:11.2.0
     container_name: grafana
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    # ports:
+    #   - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${APP_F4_PASS}
