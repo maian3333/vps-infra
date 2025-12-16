@@ -95,12 +95,12 @@ services:
 
   consul:
     image: hashicorp/consul:1.21.0
+    container_name: consul
     restart: unless-stopped
-    # ports:
-    #   - 8300:8300
-    #   - 8500:8500
-    #   - 8600:8600
-    command: consul agent -dev -ui -client 0.0.0.0 -log-level=INFO
+    command: >
+      consul agent -server -bootstrap-expect=1 -ui -client=0.0.0.0 -config-file=/consul/config/consul.hcl
+    volumes:
+      - ./central-server-config/consul/consul.hcl:/consul/config/consul.hcl
     labels:
       autoheal: "true"
     healthcheck:
@@ -112,13 +112,17 @@ services:
 
   consul-config-loader:
     image: jhipster/consul-config-loader:v0.4.1
+    container_name: consul-config-loader
     restart: unless-stopped
     volumes:
-      - ./central-server-config:/config
+      - ./central-server-config/config:/config
+      - ./central-server-config/consul/upload-consul-file-with-token.sh:/upload-consul-file.sh:ro
     environment:
       - INIT_SLEEP_SECONDS=5
       - CONSUL_URL=consul
       - CONSUL_PORT=8500
+      # ACL token from consul.hcl initial_management token
+      - CONSUL_HTTP_TOKEN=f4security
     depends_on:
       consul:
         condition: service_healthy
@@ -129,7 +133,7 @@ services:
     image: redis:7.4.2
     restart: unless-stopped
     ports:
-      - "127.0.0.1:6379:6379" # localhost only
+      - "6379:6379" # localhost only
     command: redis-server --requirepass ${APP_F4_PASS}
     labels:
       autoheal: "true"
@@ -145,14 +149,15 @@ services:
     container_name: redisinsight
     restart: unless-stopped
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${APP_F4_PASS}
+      - RI_ACCEPT_TERMS_AND_CONDITIONS=true
+      - RI_REDIS_HOST=redis
+      - RI_REDIS_PORT=6379
+      - RI_REDIS_ALIAS=RideHub-Redis
+      - RI_REDIS_USERNAME=default
+      - RI_REDIS_PASSWORD=${APP_F4_PASS}
     depends_on:
       redis:
         condition: service_healthy
-    labels:
-      autoheal: "true"
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.1.1
@@ -301,21 +306,26 @@ services:
   #     MYSQL_ROOT_PASSWORD: rootpassword
   #     MYSQL_USER: smsuser
   #     MYSQL_PASSWORD: smspassword
-  # elasticsearch:
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
-  #   restart: unless-stopped
-  #   environment:
-  #     - ES_JAVA_OPTS=-Xms256m -Xmx256m
-  #     - discovery.type=single-node
-  #     - xpack.security.enabled=false
-  #   ports:
-  #     - 9200:9200
-  #   healthcheck:
-  #     test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health?wait_for_status=green&timeout=10s" ]
-  #     interval: 10s
-  #     timeout: 10s
-  #     retries: 10
-
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: elasticsearch
+    restart: unless-stopped
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    labels:
+      autoheal: "true"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=10s || exit 1" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
   # gkg:
   #   build:
   #     context: ./gkg
@@ -337,3 +347,6 @@ volumes:
   kafka-oauth-data:
     driver: local
   grafana_data:
+  redisinsight_data:
+  elasticsearch_data:
+    driver: local
